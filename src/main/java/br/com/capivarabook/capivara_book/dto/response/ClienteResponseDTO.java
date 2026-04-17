@@ -8,6 +8,8 @@ public class ClienteResponseDTO {
     private Long id;
     private String nome;
     private String email;
+    private String cargo;
+    private String status;
     private String cpf;
     private String telefone;
     private int emprestimosAtivos;
@@ -18,6 +20,7 @@ public class ClienteResponseDTO {
             .id(cliente.getId())
             .nome(cliente.getNome())
             .email(cliente.getEmail())
+            .status(cliente.getStatus().name())
             .cpf(cliente.getCpf())
             .telefone(cliente.getTelefone())
             .emprestimosAtivos((int) ativos)

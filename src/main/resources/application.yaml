@@ -1,14 +1,19 @@
 server:
     port: 8080
-
+    error:
+        include-message: always
+        include-binding-errors: always
 spring:
     application:
         name: capivara-book
+    mvc:
+        pathmatch:
+            matching-strategy: ant_path_matcher
     datasource:
         url: jdbc:mysql://localhost:3306/db_capivara_book?createDatabaseIfNotExist=true
         username: ${DATABASE_USERNAME}
         password: ${DATABASE_PASSWORD}
-    #    driver-class-name: com.mysql.cj.jdbc.Driver
+        driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
         hibernate:
             ddl-auto: create-drop # update
@@ -16,3 +21,25 @@ spring:
         properties:
             hibernate:
                 format_sql: true
+                dialect: org.hibernate.dialect.MySQLDialect
+jwt:
+    secret: ${JWT_SECRET:br.com.capivara-book-secret-key-must-be-at-least-256-bits-long-for-hs256}
+    expiration: 86400000 # 24 horas em ms
+springdoc:
+    api-docs:
+        path: /v3/api-docs
+    swagger-ui:
+        path: /swagger-ui.html
+        operationsSorter: method
+logging:
+    level:
+        br.com.capivarabook.capivara_book: DEBUG
+        org.springframework.security: DEBUG
+app:
+    multa:
+        diaria: 2.00
+    emprestimo:
+        prazo-dias: 14
+        limite-por-cliente: 3
+    renovacao:
+        limite: 2

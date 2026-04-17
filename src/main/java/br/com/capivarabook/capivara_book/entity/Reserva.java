@@ -1,6 +1,7 @@
 package br.com.capivarabook.capivara_book.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -31,6 +32,7 @@ public class Reserva {
     @Column(name = "dt_expiracao", nullable = false)
     private LocalDate dataExpiracao;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

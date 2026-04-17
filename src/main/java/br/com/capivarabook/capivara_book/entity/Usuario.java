@@ -1,19 +1,19 @@
 package br.com.capivarabook.capivara_book.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.springframework.security.core.userdetails.UserDetails;
 
+@SuperBuilder
 @Entity
-@Table(name = "tb_usuario")
+@Table(name = "usuario")
 @Inheritance(strategy = InheritanceType.JOINED)
-
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
-public abstract class Usuario {
+public abstract class Usuario implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_user")
@@ -32,8 +32,26 @@ public abstract class Usuario {
     @Column(name = "senha", nullable = false, length = 50)
     protected String senha;
 
-    public boolean login(String emailInput, String senhaInput) {
-        return this.email.equals(emailInput) && this.senha.equals(senhaInput);
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    protected StatusUsuario status = StatusUsuario.ATIVO;
+
+    @NotNull(message = "Tipo usuário é obrigatório")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 20)
+    protected Role role;
+
+    // ── isAtivo() ──────────────────────────────────────────────
+    // Usado pelo CustomUserDetails.isEnabled()
+    public boolean isAtivo() {
+        return this.status == StatusUsuario.ATIVO;
+    }
+
+    // ── inativar() — exclusão lógica ───────────────────────────
+    public void inativar() {
+        this.status = StatusUsuario.INATIVO;
     }
 
     public void atualizarDados(String novoNome, String novoEmail) {

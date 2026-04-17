@@ -1,6 +1,7 @@
 package br.com.capivarabook.capivara_book.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -52,6 +53,7 @@ public class Emprestimo {
     @Builder.Default
     private BigDecimal multaDiaria = new BigDecimal("2.00");
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

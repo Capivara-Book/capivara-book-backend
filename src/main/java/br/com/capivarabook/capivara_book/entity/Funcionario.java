@@ -4,8 +4,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 
 @Entity
@@ -25,7 +30,7 @@ public class Funcionario extends Usuario {
     @NotNull(message = "Cargo é obrigatório")
     @Enumerated(EnumType.STRING)
     @Column(name = "cargo", nullable = false, length = 20)
-    private Cargo cargo;
+    protected Cargo cargo;
 
     public void statusLivro(Livro livro, StatusLivro novoStatus) {
         if (novoStatus == StatusLivro.INDISPONIVEL && livro.getExemplaresDisponiveis() < livro.getExemplares()) {
@@ -86,6 +91,21 @@ public class Funcionario extends Usuario {
 
     public void statusRenovacao(Emprestimo emprestimo) {
         emprestimo.renovarEmprestimo(); // lança exceção se em atraso ou limite atingido
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public @Nullable String getPassword() {
+        return "";
+    }
+
+    @Override
+    public String getUsername() {
+        return "";
     }
 }
 

@@ -9,6 +9,8 @@ public class FuncionarioRequestDTO {
     @NotBlank private String nome;
     @NotBlank @Email private String email;
     @NotBlank private String senha;
+    @NotBlank private String status;
     @NotBlank private String matricula;
     @NotBlank private String cargo;
+
 }

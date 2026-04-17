@@ -5,16 +5,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 import lombok.*;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "tb_cliente")
-
+@Table(name = "cliente")
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 @PrimaryKeyJoinColumn(name = "id_cli")
 public class Cliente extends Usuario {
 
@@ -57,5 +59,20 @@ public class Cliente extends Usuario {
             throw new IllegalStateException("Somente reservas PENDENTES podem ser canceladas.");
         }
         reserva.setStatus(StatusReserva.CANCELADO);
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public @Nullable String getPassword() {
+        return "";
+    }
+
+    @Override
+    public String getUsername() {
+        return "";
     }
 }
