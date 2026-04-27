@@ -26,11 +26,11 @@ jwt:
     secret: ${JWT_SECRET:br.com.capivara-book-secret-key-must-be-at-least-256-bits-long-for-hs256}
     expiration: 86400000 # 24 horas em ms
 springdoc:
-    api-docs:
-        path: /v3/api-docs
     swagger-ui:
-        path: /swagger-ui.html
-        operationsSorter: method
+        doc-expansion: none
+        filter: true
+        tags-sorter: alpha
+        operation-sorter: alpha
 logging:
     level:
         br.com.capivarabook.capivara_book: DEBUG
