@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @SuperBuilder
 @Entity
-@Table(name = "usuario")
+@Table(name = "tb_usuario")
 @Inheritance(strategy = InheritanceType.JOINED)
 @Getter @Setter
 @NoArgsConstructor
@@ -29,7 +29,7 @@ public abstract class Usuario implements UserDetails {
     protected String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Column(name = "senha", nullable = false, length = 50)
+    @Column(name = "senha", nullable = false, length = 255)
     protected String senha;
 
     @NotNull
