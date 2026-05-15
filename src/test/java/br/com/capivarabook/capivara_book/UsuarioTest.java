@@ -23,30 +23,61 @@ class UsuarioTest {
 
     @Test
     @DisplayName("isAtivo() → true para StatusUsuario.ATIVO")
-    void isAtivo_deveRetornarTrue_quandoAtivo() {
+    void isAtivoPadrao() {
         assertTrue(usuarioBase().isAtivo());
     }
 
     @Test
     @DisplayName("isAtivo() → false para StatusUsuario.INATIVO")
-    void isAtivo_deveRetornarFalse_quandoInativo() {
+    void isAtivoQuandoInativo() {
         Cliente c = usuarioBase();
         c.setStatus(StatusUsuario.INATIVO);
         assertFalse(c.isAtivo());
     }
 
+    // ── Cenários de erro — isAtivoPadrao() ──────────────────────
+
+    @Test
+    @DisplayName("isAtivo() → false quando status é nulo")
+    void isAtivoQuandoStatusNulo() {
+        Cliente c = usuarioBase();
+        c.setStatus(null);
+        assertFalse(c.isAtivo());
+    }
+
     @Test
     @DisplayName("inativar() → seta StatusUsuario.INATIVO")
-    void inativar_deveSetarInativo() {
+    void isInativo() {
         Cliente c = usuarioBase();
         c.inativar();
         assertEquals(StatusUsuario.INATIVO, c.getStatus());
         assertFalse(c.isAtivo());
     }
 
+    // ── Cenários de erro — isInativo() ─────────────────────
+
+    @Test
+    @DisplayName("inativar() → idempotente: chamar duas vezes mantém INATIVO")
+    void inativarDeveSerIdempotente() {
+        Cliente c = usuarioBase();
+        c.inativar();
+        c.inativar();
+        assertEquals(StatusUsuario.INATIVO, c.getStatus());
+        assertFalse(c.isAtivo());
+    }
+
+    @Test
+    @DisplayName("inativar() → não lança exceção quando status já é nulo")
+    void inativarQuandoStatusNulo() {
+        Cliente c = usuarioBase();
+        c.setStatus(null);
+        assertDoesNotThrow(c::inativar);
+        assertEquals(StatusUsuario.INATIVO, c.getStatus());
+    }
+
     @Test
     @DisplayName("atualizarDados() → atualiza nome e email quando válidos")
-    void atualizarDados_deveAtualizar_quandoValidos() {
+    void atualizarDadosValidos() {
         Cliente c = usuarioBase();
         c.atualizarDados("Novo Nome", "novo@email.com");
         assertEquals("Novo Nome", c.getNome());
@@ -55,7 +86,7 @@ class UsuarioTest {
 
     @Test
     @DisplayName("atualizarDados() → ignora nome nulo")
-    void atualizarDados_ignora_nomeNulo() {
+    void atualizarDadosIgnoraNomeNulo() {
         Cliente c = usuarioBase();
         String nomeOriginal = c.getNome();
         c.atualizarDados(null, "outro@email.com");
@@ -64,10 +95,56 @@ class UsuarioTest {
 
     @Test
     @DisplayName("atualizarDados() → ignora email blank")
-    void atualizarDados_ignora_emailBlank() {
+    void atualizarDadosIgnoraEmailBlank() {
         Cliente c = usuarioBase();
         String emailOriginal = c.getEmail();
         c.atualizarDados("Nome Novo", "  ");
         assertEquals(emailOriginal, c.getEmail());
+    }
+
+    // ── Cenários de erro — atualizarDados() ───────────────
+
+    @Test
+    @DisplayName("atualizarDados() → ignora nome blank (só espaços)")
+    void atualizarDadosIgnoraNomeBlank() {
+        Cliente c = usuarioBase();
+        String nomeOriginal = c.getNome();
+        c.atualizarDados("   ", "novo@email.com");
+        assertEquals(nomeOriginal, c.getNome());
+    }
+
+    @Test
+    @DisplayName("atualizarDados() → ignora email nulo")
+    void atualizarDadosIgnoraEmailNulo() {
+        Cliente c = usuarioBase();
+        String emailOriginal = c.getEmail();
+        c.atualizarDados("Nome Novo", null);
+        assertEquals(emailOriginal, c.getEmail());
+    }
+
+    @Test
+    @DisplayName("atualizarDados() → ambos nulos: nenhum campo é alterado")
+    void atualizarDadosAmbosNulosNaoAltera() {
+        Cliente c = usuarioBase();
+        String nomeOriginal = c.getNome();
+        String emailOriginal = c.getEmail();
+        c.atualizarDados(null, null);
+        assertAll(
+                () -> assertEquals(nomeOriginal, c.getNome()),
+                () -> assertEquals(emailOriginal, c.getEmail())
+        );
+    }
+
+    @Test
+    @DisplayName("atualizarDados() → string vazia (\"\") é tratada como blank e ignorada")
+    void atualizarDadosIgnoraStringVazia() {
+        Cliente c = usuarioBase();
+        String nomeOriginal = c.getNome();
+        String emailOriginal = c.getEmail();
+        c.atualizarDados("", "");
+        assertAll(
+                () -> assertEquals(nomeOriginal, c.getNome()),
+                () -> assertEquals(emailOriginal, c.getEmail())
+        );
     }
 }
