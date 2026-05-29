@@ -13,17 +13,20 @@ import lombok.*;
 @Service
 @RequiredArgsConstructor
 public class LivroService {
+
     private final ILivroRepository livroRepository;
-//    public LivroService(ILivroRepository r) { this.livroRepository = r; }
 
     @Transactional
     public LivroResponseDTO adicionarLivro(LivroRequestDTO req) {
         if (livroRepository.existsByIsbn(req.getIsbn()))
             throw new DuplicateResourceException("ISBN já cadastrado: " + req.getIsbn());
         Livro l = new Livro();
-        l.setTitulo(req.getTitulo()); l.setAutor(req.getAutor());
-        l.setEditora(req.getEditora()); l.setIsbn(req.getIsbn());
-        l.setAnoPublicacao(req.getAnoPublicacao()); l.setGenero(req.getGenero());
+        l.setTitulo(req.getTitulo());
+        l.setAutor(req.getAutor());
+        l.setEditora(req.getEditora());
+        l.setIsbn(req.getIsbn());
+        l.setAnoPublicacao(req.getAnoPublicacao());
+        l.setGenero(req.getGenero());
         l.setExemplares(req.getExemplares());
         l.adicionarLivro();
         return LivroResponseDTO.from(livroRepository.save(l));
@@ -31,20 +34,22 @@ public class LivroService {
 
     @Transactional(readOnly = true)
     public List<LivroResponseDTO> buscarLivro(String titulo, String autor,
-                                           String editora, Genero genero, Integer ano) {
+                                              String editora, Genero genero, Integer ano) {
         return livroRepository.buscarLivro(titulo, autor, editora, genero, ano)
                 .stream().map(LivroResponseDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
     public List<LivroResponseDTO> buscarTodos(String titulo, String autor,
-                                           String editora, Genero genero, Integer ano) {
+                                              String editora, Genero genero, Integer ano) {
         return livroRepository.buscarTodos(titulo, autor, editora, genero, ano)
                 .stream().map(LivroResponseDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public LivroResponseDTO buscarPorId(Long id) { return LivroResponseDTO.from(buscarLivro(id)); }
+    public LivroResponseDTO buscarPorId(Long id) {
+        return LivroResponseDTO.from(buscarLivro(id));
+    }
 
     @Transactional
     public LivroResponseDTO alterarStatus(Long id, StatusLivro novoStatus) {
@@ -61,12 +66,16 @@ public class LivroService {
         Livro l = buscarLivro(id);
         if (!l.getIsbn().equals(req.getIsbn()) && livroRepository.existsByIsbn(req.getIsbn()))
             throw new DuplicateResourceException("ISBN já cadastrado: " + req.getIsbn());
-        l.setTitulo(req.getTitulo()); l.setAutor(req.getAutor());
-        l.setEditora(req.getEditora()); l.setIsbn(req.getIsbn());
-        l.setAnoPublicacao(req.getAnoPublicacao()); l.setGenero(req.getGenero());
+        l.setTitulo(req.getTitulo());
+        l.setAutor(req.getAutor());
+        l.setEditora(req.getEditora());
+        l.setIsbn(req.getIsbn());
+        l.setAnoPublicacao(req.getAnoPublicacao());
+        l.setGenero(req.getGenero());
         return LivroResponseDTO.from(livroRepository.save(l));
     }
 
+    @Transactional(readOnly = true)
     public Livro buscarLivro(Long id) {
         return livroRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Livro", id));

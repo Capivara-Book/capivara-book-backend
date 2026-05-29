@@ -12,60 +12,61 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// ── AuthService ────────────────────────────────────────────────
-// Responsável pelo login com email + senha.
-// Determina a role a partir do tipo de usuário:
-//   Funcionario → "ROLE_" + cargo.name()   (ex: ROLE_ADMIN)
-//   Cliente     → "ROLE_CLIENTE"
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final AuthenticationManager authManager;
-    private final IUsuarioRepository usuarioRepository;
-    private final IClienteRepository clienteRepository;
-    private final IFuncionarioRepository funcionarioRepository;
-    private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager     authManager;
+    private final IUsuarioRepository        usuarioRepository;
+    private final IClienteRepository        clienteRepository;
+    private final IFuncionarioRepository    funcionarioRepository;
+    private final JwtUtil                   jwtUtil;
+    private final PasswordEncoder           passwordEncoder;
 
     @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO req) {
 
-        // Spring Security valida senha com BCrypt e chama isEnabled()
-        // que verifica statusUsuario != INATIVO
         try {
-            authManager.authenticate(new UsernamePasswordAuthenticationToken(req.getEmail(), req.getSenha()));
+            authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(req.getEmail(), req.getSenha()));
         } catch (DisabledException e) {
             throw new BusinessException("Usuário inativo. Entre em contato com a biblioteca.");
         } catch (BadCredentialsException e) {
             throw new BusinessException("E-mail ou senha inválidos.");
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(req.getEmail()).orElseThrow(() -> new BusinessException("Usuário não encontrado."));
+        Usuario usuario = usuarioRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado."));
 
         String roleDisplay;
         String cargoDisplay;
+        String roleParaToken;
 
         if (funcionarioRepository.existsByUsuarioId(usuario.getId())) {
-            Funcionario func = funcionarioRepository.findById(usuario.getId()).orElseThrow(() -> new RuntimeException("Funcionário não encontrado com o ID: " + usuario.getId()));;
-            roleDisplay  = "ADMIN";
-            cargoDisplay = func.getCargo().name();
+            Funcionario func = funcionarioRepository.findById(usuario.getId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Funcionário não encontrado com id: " + usuario.getId()));
+
+            roleParaToken = "ROLE_" + func.getCargo().name(); // ex: ROLE_GERENTE
+            roleDisplay   = func.getCargo().name();           // ex: GERENTE (para o frontend)
+            cargoDisplay  = func.getCargo().name();
+
         } else {
-            roleDisplay  = "CLIENTE";
-            cargoDisplay = "CLIENTE";
+            roleParaToken = "ROLE_CLIENTE";
+            roleDisplay   = "CLIENTE";
+            cargoDisplay  = "CLIENTE";
         }
 
-        String token;
-        token = jwtUtil.gerarToken(usuario.getId(), usuario.getEmail(), usuario.getRole().name());
+        String token = jwtUtil.gerarToken(usuario.getId(), usuario.getEmail(), roleParaToken);
 
         return LoginResponseDTO.builder()
-            .token(token)
-            .tipo("Bearer")
-            .id(usuario.getId())
-            .nome(usuario.getNome())
-            .email(usuario.getEmail())
-            .role(roleDisplay)
-            .cargo(cargoDisplay)
-            .build();
+                .token(token)
+                .tipo("Bearer")
+                .id(usuario.getId())
+                .nome(usuario.getNome())
+                .email(usuario.getEmail())
+                .role(roleDisplay)
+                .cargo(cargoDisplay)
+                .build();
     }
 }

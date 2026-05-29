@@ -4,7 +4,9 @@ import br.com.capivarabook.capivara_book.dto.response.*;
 import br.com.capivarabook.capivara_book.entity.*;
 import br.com.capivarabook.capivara_book.exception.*;
 import br.com.capivarabook.capivara_book.repository.*;
+import br.com.capivarabook.capivara_book.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -14,21 +16,19 @@ import lombok.*;
 @Service
 @RequiredArgsConstructor
 public class EmprestimoService {
+
     private final IEmprestimoRepository emprestimoRepository;
-    private final LivroService livroService;
-    private final UsuarioService usuarioService;
+    private final ILivroRepository      livroRepository;
+    private final LivroService          livroService;
+    private final UsuarioService        usuarioService;
 
-    @Value("${app.emprestimo.prazo-dias:14}") private int prazoDias;
-    @Value("${app.multa.diaria:2.00}")        private BigDecimal multaDiaria;
-
-//    public EmprestimoService(IEmprestimoRepository e, LivroService l, UsuarioService u) {
-//        emprestimoRepository = e; livroService = l; usuarioService = u;
-//    }
+    @Value("${app.emprestimo.prazo-dias:14}") private int         prazoDias;
+    @Value("${app.multa.diaria:2.00}")        private BigDecimal  multaDiaria;
 
     @Transactional
     public EmprestimoResponseDTO registrarEmprestimo(Long clienteId, Long livroId, Long funcId) {
-        Cliente c = usuarioService.buscarCliente(clienteId);
-        Livro   l = livroService.buscarLivro(livroId);
+        Cliente     c = usuarioService.buscarCliente(clienteId);
+        Livro       l = livroService.buscarLivro(livroId);
         Funcionario f = usuarioService.buscarFuncionario(funcId);
 
         if (emprestimoRepository.countAtivosDoCliente(clienteId) >= Cliente.LIMITE_EMPRESTIMOS)
@@ -39,20 +39,27 @@ public class EmprestimoService {
             throw new BusinessException("Cliente já possui este livro emprestado (RN03).");
 
         Emprestimo emp = f.registrarEmprestimo(c, l, prazoDias, multaDiaria);
+        livroRepository.save(l);
         return EmprestimoResponseDTO.from(emprestimoRepository.save(emp));
     }
 
     @Transactional
     public DevolucaoResponseDTO devolverLivro(Long empId, Long funcId) {
-        Emprestimo emp = buscarEmprestimo(empId);
-        Funcionario f  = usuarioService.buscarFuncionario(funcId);
-        BigDecimal multa = f.registrarDevolucao(emp);
+        Emprestimo  emp   = buscarEmprestimo(empId);
+        Funcionario f     = usuarioService.buscarFuncionario(funcId);
+        BigDecimal  multa = f.registrarDevolucao(emp);
+
+        livroRepository.save(emp.getLivro());
         emprestimoRepository.save(emp);
+
         String msg = multa.compareTo(BigDecimal.ZERO) > 0
                 ? "Devolvido com atraso. Multa: R$ " + multa
                 : "Devolvido no prazo.";
         return DevolucaoResponseDTO.builder()
-                .emprestimo(EmprestimoResponseDTO.from(emp)).multaGerada(multa).mensagem(msg).build();
+                .emprestimo(EmprestimoResponseDTO.from(emp))
+                .multaGerada(multa)
+                .mensagem(msg)
+                .build();
     }
 
     @Transactional
@@ -76,19 +83,28 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public List<EmprestimoResponseDTO> listarEmAtraso() {
-        return emprestimoRepository.findEmAtraso().stream().map(EmprestimoResponseDTO::from).toList();
+        return emprestimoRepository.findEmAtraso().stream()
+                .map(EmprestimoResponseDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<EmprestimoResponseDTO> listarPorCliente(Long cId) {
-        return emprestimoRepository.findByClienteId(cId).stream().map(EmprestimoResponseDTO::from).toList();
+    public List<EmprestimoResponseDTO> listarPorCliente(Long clienteId, Authentication auth) {
+        if (!usuarioService.isAdminOuGerente(auth)) {
+            CustomUserDetails me = (CustomUserDetails) auth.getPrincipal();
+            if (!me.getIdUser().equals(clienteId))
+                throw new BusinessException("Acesso negado: você só pode consultar seus próprios empréstimos.");
+        }
+        return emprestimoRepository.findByClienteId(clienteId).stream()
+                .map(EmprestimoResponseDTO::from).toList();
     }
 
     @Transactional(readOnly = true)
     public List<EmprestimoResponseDTO> listarTodos() {
-        return emprestimoRepository.findAll().stream().map(EmprestimoResponseDTO::from).toList();
+        return emprestimoRepository.findAll().stream()
+                .map(EmprestimoResponseDTO::from).toList();
     }
 
+    @Transactional(readOnly = true)
     public Emprestimo buscarEmprestimo(Long id) {
         return emprestimoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Empréstimo", id));

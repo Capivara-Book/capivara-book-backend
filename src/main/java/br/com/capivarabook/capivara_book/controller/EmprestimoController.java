@@ -5,6 +5,7 @@ import br.com.capivarabook.capivara_book.dto.response.EmprestimoResponseDTO;
 import br.com.capivarabook.capivara_book.service.EmprestimoService;
 import lombok.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +13,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/emprestimos")
 @RequiredArgsConstructor
-
 public class EmprestimoController {
+
     private final EmprestimoService emprestimoService;
 
     @GetMapping
@@ -30,8 +31,10 @@ public class EmprestimoController {
 
     @GetMapping("/cliente/{clienteId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<EmprestimoResponseDTO> listarPorCliente(@PathVariable Long clienteId) {
-        return emprestimoService.listarPorCliente(clienteId);
+    public List<EmprestimoResponseDTO> listarPorCliente(
+            @PathVariable Long clienteId,
+            Authentication auth) {
+        return emprestimoService.listarPorCliente(clienteId, auth);
     }
 
     @GetMapping("/{id}")

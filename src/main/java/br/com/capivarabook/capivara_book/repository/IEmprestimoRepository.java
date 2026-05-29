@@ -25,15 +25,13 @@ public interface IEmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     boolean existsDuplicataAtiva(@Param("clienteId") Long clienteId,
                                  @Param("livroId")   Long livroId);
 
-    // Empréstimos em atraso (UC05 Admin)
     @Query("""
         SELECT emprestimo FROM Emprestimo emprestimo
-        WHERE emprestimo.status = 'ATIVO'
+        WHERE emprestimo.status IN ('ATIVO', 'ATRASADO', 'RENOVADO')
             AND emprestimo.dataPrevistaDevolucao < CURRENT_DATE
     """)
     List<Emprestimo> findEmAtraso();
 
-    // Conta ativos do cliente (RN01)
     @Query("""
         SELECT COUNT(emprestimo) FROM Emprestimo emprestimo
         WHERE emprestimo.cliente.id = :clienteId

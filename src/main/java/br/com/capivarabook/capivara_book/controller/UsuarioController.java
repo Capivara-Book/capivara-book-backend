@@ -4,7 +4,6 @@ import br.com.capivarabook.capivara_book.dto.request.ClienteRequestDTO;
 import br.com.capivarabook.capivara_book.dto.request.FuncionarioRequestDTO;
 import br.com.capivarabook.capivara_book.dto.response.ClienteResponseDTO;
 import br.com.capivarabook.capivara_book.dto.response.FuncionarioResponseDTO;
-import br.com.capivarabook.capivara_book.exception.*;
 import br.com.capivarabook.capivara_book.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.*;
@@ -12,11 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 public class UsuarioController {
+
     private final UsuarioService usuarioService;
 
     @GetMapping("/api/v1/usuarios/clientes")
@@ -49,7 +48,6 @@ public class UsuarioController {
         return usuarioService.atualizarCliente(id, req);
     }
 
-    // DELETE = exclusão lógica → inativar() seta StatusUsuario.INATIVO (RN07)
     @DeleteMapping("/api/v1/usuarios/clientes/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
@@ -57,10 +55,24 @@ public class UsuarioController {
         usuarioService.inativarCliente(id);
     }
 
+    @GetMapping("/api/v1/usuarios/funcionarios")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public List<FuncionarioResponseDTO> listarFuncionarios() {
+        return usuarioService.listarFuncionarios();
+    }
+
     @PostMapping("/api/v1/usuarios/funcionarios")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     public FuncionarioResponseDTO cadastrarFuncionario(@Valid @RequestBody FuncionarioRequestDTO req) {
         return usuarioService.cadastrarFuncionario(req);
+    }
+
+    @DeleteMapping("/api/v1/usuarios/funcionarios/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void inativarFuncionario(@PathVariable Long id) {
+        usuarioService.inativarFuncionario(id);
     }
 }

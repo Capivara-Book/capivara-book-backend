@@ -15,7 +15,10 @@ public interface IReservaRepository extends JpaRepository<Reserva, Long> {
 
     List<Reserva> findByStatus(StatusReserva status);
 
-    // Verifica duplicata ativa de reserva
+    List<Reserva> findByStatusIn(List<StatusReserva> statuses);
+
+    List<Reserva> findByClienteIdAndStatusIn(Long clienteId, List<StatusReserva> statuses);
+
     @Query("""
         SELECT COUNT(reserva) > 0 FROM Reserva reserva
         WHERE reserva.cliente.id = :clienteId
@@ -25,6 +28,5 @@ public interface IReservaRepository extends JpaRepository<Reserva, Long> {
     boolean existsReservaAtiva(@Param("clienteId") Long clienteId,
                                @Param("livroId")   Long livroId);
 
-    // Reservas pendentes para um livro (notificação pós-devolução)
     List<Reserva> findByLivroIdAndStatus(Long livroId, StatusReserva status);
 }

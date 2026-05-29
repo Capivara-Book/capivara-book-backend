@@ -5,6 +5,8 @@ import br.com.capivarabook.capivara_book.dto.response.*;
 import br.com.capivarabook.capivara_book.entity.*;
 import br.com.capivarabook.capivara_book.exception.*;
 import br.com.capivarabook.capivara_book.repository.*;
+import br.com.capivarabook.capivara_book.security.CustomUserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +16,14 @@ import lombok.*;
 @Service
 @RequiredArgsConstructor
 public class UsuarioService {
-    private final IClienteRepository clienteRepository;
-    private final IFuncionarioRepository funcionarioRepository;
-    private final IUsuarioRepository usuarioRepository;
-    private final IEmprestimoRepository emprestimoRepository;
 
-    // ── cadastrarCliente() ────────────────────────────────────
-    // Role fixa: ROLE_CLIENTE
+    private final IClienteRepository     clienteRepository;
+    private final IFuncionarioRepository funcionarioRepository;
+    private final IUsuarioRepository     usuarioRepository;
+    private final IEmprestimoRepository  emprestimoRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
     @Transactional
     public ClienteResponseDTO cadastrarCliente(ClienteRequestDTO req) {
         if (usuarioRepository.existsByEmail(req.getEmail()))
@@ -33,17 +36,15 @@ public class UsuarioService {
         Cliente c = new Cliente();
         c.setNome(req.getNome());
         c.setEmail(req.getEmail());
-        c.setSenha(req.getSenha()); // BCrypt
+        c.setSenha(passwordEncoder.encode(req.getSenha()));
         c.setCpf(req.getCpf());
         c.setTelefone(req.getTelefone());
         c.setStatus(StatusUsuario.ATIVO);
-        c.setRole(Role.CLIENTE);                          // RBAC
+        c.setRole(Role.CLIENTE);
 
         return ClienteResponseDTO.from(clienteRepository.save(c), 0L);
     }
 
-    // ── cadastrarFuncionario() ────────────────────────────────
-    // Role derivada do Cargo: ADMIN → ROLE_ADMIN etc.
     @Transactional
     public FuncionarioResponseDTO cadastrarFuncionario(FuncionarioRequestDTO req) {
         if (usuarioRepository.existsByEmail(req.getEmail()))
@@ -53,34 +54,40 @@ public class UsuarioService {
 
         Cargo cargo = Cargo.valueOf(req.getCargo().toUpperCase());
 
+        Role role = Role.valueOf(cargo.name());
+
         Funcionario f = new Funcionario();
         f.setNome(req.getNome());
         f.setEmail(req.getEmail());
-        f.setSenha(req.getSenha()); // BCrypt
+        f.setSenha(passwordEncoder.encode(req.getSenha()));
         f.setMatricula(req.getMatricula());
         f.setCargo(cargo);
         f.setStatus(StatusUsuario.ATIVO);
-        f.setRole(Role.ADMIN);                  // RBAC derivado do Cargo
+        f.setRole(role);
 
         return FuncionarioResponseDTO.from(funcionarioRepository.save(f));
     }
 
-    // ── listarClientes() — só ATIVOS ─────────────────────────
     @Transactional(readOnly = true)
     public List<ClienteResponseDTO> listarClientes() {
-        return clienteRepository.findAll().stream()
+        return clienteRepository.findByStatus(StatusUsuario.ATIVO).stream()
                 .map(c -> ClienteResponseDTO.from(c, emprestimoRepository.countAtivosDoCliente(c.getId())))
                 .toList();
     }
 
-    // ── buscarClientePorId() ──────────────────────────────────
+    @Transactional(readOnly = true)
+    public List<FuncionarioResponseDTO> listarFuncionarios() {
+        return funcionarioRepository.findByStatus(StatusUsuario.ATIVO).stream()
+                .map(FuncionarioResponseDTO::from)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public ClienteResponseDTO buscarClientePorId(Long id) {
         Cliente c = buscarCliente(id);
         return ClienteResponseDTO.from(c, emprestimoRepository.countAtivosDoCliente(c.getId()));
     }
 
-    // ── atualizarCliente() ────────────────────────────────────
     @Transactional
     public ClienteResponseDTO atualizarCliente(Long id, ClienteRequestDTO req) {
         Cliente c = buscarCliente(id);
@@ -92,8 +99,6 @@ public class UsuarioService {
                 emprestimoRepository.countAtivosDoCliente(c.getId()));
     }
 
-    // ── inativarCliente() — exclusão lógica (RN07) ────────────
-    // NÃO deleta do banco — chama inativar() que seta INATIVO
     @Transactional
     public void inativarCliente(Long id) {
         Cliente c = buscarCliente(id);
@@ -104,12 +109,26 @@ public class UsuarioService {
         clienteRepository.save(c);
     }
 
-    // ── helpers internos ──────────────────────────────────────
+    @Transactional
+    public void inativarFuncionario(Long id) {
+        Funcionario f = buscarFuncionario(id);
+        f.inativar();
+        funcionarioRepository.save(f);
+    }
+
+    public boolean isAdminOuGerente(Authentication auth) {
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_GERENTE"));
+    }
+
+    @Transactional(readOnly = true)
     public Cliente buscarCliente(Long id) {
         return clienteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
     }
 
+    @Transactional(readOnly = true)
     public Funcionario buscarFuncionario(Long id) {
         return funcionarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionario", id));

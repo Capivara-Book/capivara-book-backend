@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class Usuario implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_user")
@@ -43,13 +44,11 @@ public abstract class Usuario implements UserDetails {
     @Column(name = "tipo", nullable = false, length = 20)
     protected Role role;
 
-    // ── isAtivo() ──────────────────────────────────────────────
-    // Usado pelo CustomUserDetails.isEnabled()
     public boolean isAtivo() {
         return this.status == StatusUsuario.ATIVO;
     }
 
-    // ── inativar() — exclusão lógica ───────────────────────────
+    // Exclusão lógica
     public void inativar() {
         this.status = StatusUsuario.INATIVO;
     }
