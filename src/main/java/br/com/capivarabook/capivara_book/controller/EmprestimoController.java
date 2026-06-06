@@ -2,6 +2,7 @@ package br.com.capivarabook.capivara_book.controller;
 
 import br.com.capivarabook.capivara_book.dto.response.DevolucaoResponseDTO;
 import br.com.capivarabook.capivara_book.dto.response.EmprestimoResponseDTO;
+import br.com.capivarabook.capivara_book.security.CustomUserDetails;
 import br.com.capivarabook.capivara_book.service.EmprestimoService;
 import lombok.*;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/emprestimos")
@@ -53,11 +55,17 @@ public class EmprestimoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public EmprestimoResponseDTO registrarEmprestimo(@RequestBody Map<String, Long> body) {
+    public EmprestimoResponseDTO registrarEmprestimo(
+            @RequestBody Map<String, Long> body,
+            Authentication auth) {
+
+        Long funcionarioId = /* extrair do auth */
+                ((CustomUserDetails) Objects.requireNonNull(auth.getPrincipal())).getIdUser();
+
         return emprestimoService.registrarEmprestimo(
                 body.get("clienteId"),
                 body.get("livroId"),
-                body.get("funcionarioId"));
+                funcionarioId);
     }
 
     @PatchMapping("/{id}/devolver")
